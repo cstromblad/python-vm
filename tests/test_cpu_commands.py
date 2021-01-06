@@ -46,3 +46,29 @@ def test_push_and_pop_to_stack():
     vm.cpu.pop_reg(register)
 
     assert 0x41 == vm.cpu.bp.uint16
+
+def test_multiple_push_and_pops_to_stack():
+
+    vm = cvm.VirtualMachineV2()
+
+    args = (uint16_t(0x41), uint8_t(0x3))
+    vm.cpu.move_to_reg(args)
+
+    register = (uint8_t(0x3))
+    vm.cpu.push_reg(register)
+
+    args = (uint16_t(0x42), uint8_t(0x3))
+    vm.cpu.move_to_reg(args)
+    
+    register = (uint8_t(0x3))
+    vm.cpu.push_reg(register)
+    
+    register = (uint8_t(0x2))
+    vm.cpu.pop_reg(register)
+    
+    register = (uint8_t(0x0))
+    vm.cpu.pop_reg(register)
+
+    assert 0x41 == vm.cpu.ip.uint16
+    assert 0x42 == vm.cpu.bp.uint16
+    

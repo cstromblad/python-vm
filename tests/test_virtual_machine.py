@@ -11,7 +11,7 @@ def default_program():
 @pytest.fixture
 def call_program():
     # Call function at address placed in Reg01
-    return b'\x08\x37\x37\x03\x09\x03\x00'
+    return b'\x08\x37\x37\x03\x09\x03\x08\x00\x41\x03\x00'
 
 @pytest.fixture
 def subroutine():
@@ -113,13 +113,16 @@ def test_virtual_machine_can_run_subroutine_from_main_program(call_program, subr
 
     vm = cvm.VirtualMachineV2()
 
-    program = (uint16_t(0x0000), call_program)
-    vm.load_program(program)
-
     CORS_FLAG = b"CORS_CTF{03783743}\x00"
     vm.load_data((uint16_t(0x1337), CORS_FLAG, "cors_flag"))
     vm.load_program((uint16_t(0x3737), subroutine), "secret_func")
-    vm.run_program()
 
+    program = (uint16_t(0x0000), call_program)
+    vm.load_program(program)
     
+    vm.run_program()
+        
     assert "CORS_CTF" in vm.output
+    print(vm.cpu.ip)
+    print(vm.ram.read_byte(vm.cpu.ip - 2))
+    assert 0x41 == vm.cpu.reg01.uint16

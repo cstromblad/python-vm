@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "95ea89d759d38ac9e181d7f3ab5f47f2588fee30e751273205b584534e6e6d18"
+            "sha256": "6376eff28e0363d8425f3f5077e921e6998c5974cb65b834dd27ea5c16f53f06"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -84,10 +84,5 @@
             "version": "==0.10.2"
         }
     },
-    "develop": {
-        "cors-vm": {
-            "editable": true,
-            "path": "."
-        }
-    }
+    "develop": {}
 }

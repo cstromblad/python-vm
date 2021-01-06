@@ -72,11 +72,14 @@ class CentralProcessingUnit:
             2: {"name": "Base Pointer",
                 "value": self.bp},
             3: {"name": "Register 01",
-                "value": self.reg01}
+                "value": self.reg01},
+            4: {"name": "Instruction Pointer",
+                "value": self.ip}
             }
 
     def __repr__(self):
         return f"CPU({self.ram})"
+
     @property
     def ip(self):
         return self._ip
@@ -124,10 +127,11 @@ class CentralProcessingUnit:
         # Stack grows downards, reduce by two bytes and then write value to 
         # the address pointed to by cpu.sp
              
-        value = self.registers[reg.uint8]['value']
-        
+        value = self.registers[reg.uint8]['value'].uint16
+        print(f"push_reg: {reg} {value}")
+
         # Write it to the stack
-        self.ram.write_word((value, self.sp - 2))
+        self.ram.write_word((uint16_t(value), self.sp - 2))
 
         # Decrement stackpointer to accomodate the new 
 
@@ -136,8 +140,10 @@ class CentralProcessingUnit:
     def pop_reg(self, args):
 
         (reg) = args
-        word = self.ram.read_word(self.sp)
 
+        print(self.sp)
+        word = self.ram.read_word(self.sp)
+        print(word)
         self.registers[reg.uint8]['value'].uint16 = word.uint16
 
         self.sp += 2
@@ -212,7 +218,7 @@ class VirtualMachineV2:
 
             self._code_segments.append(Segment('main_program', uint16_t(0x0000), len(program)))
 
-        self.cpu.ip = uint16_t(0x0000)
+            self.cpu.ip = uint16_t(0x0000)
     
     @property
     def code_segments(self):
@@ -234,7 +240,7 @@ class VirtualMachineV2:
 
         self._code_segments.append(Segment(name, start_addr, len(data)))
 
-        self.cpu.ip = start_addr
+        self.cpu.ip.uint16 = start_addr.uint16
 
     def load_data(self, args):
 
@@ -255,7 +261,7 @@ class VirtualMachineV2:
 
             for index, byte in enumerate(data):
 
-                args = (uint8_t(byte), uint16_t(start_addr.uint16 + index))
+                args = (uint8_t(byte), start_addr + index)
 
                 self.ram.write_byte(args)
 
@@ -325,16 +331,18 @@ class VirtualMachineV2:
         while not self.should_halt():
 
             opcode = self.fetch_instruction().uint8
-            self.cpu.ip += 1
+            self.cpu.ip.uint16 += 1
 
             args = self.decode_instruction(opcode)
 
             if self.opcodes[opcode]['size'] == 0:
 
                 self.opcodes[opcode]['func']()
+                print(f"ip:{hex(self.cpu.ip.uint16)} {self.opcodes[opcode]['name']}()")
 
             else:
-                self.cpu.ip += self.opcodes[opcode]['size']
+                self.cpu.ip.uint16 += self.opcodes[opcode]['size']
+                print(f"ip:{hex(self.cpu.ip.uint16)} {self.opcodes[opcode]['name']}({args})")
                 self.opcodes[opcode]['func'](args)
 
     def should_halt(self):
@@ -361,8 +369,6 @@ class VirtualMachineV2:
 
     def call_func(self, args):
 
-        """ Set IP to value from Reg01 and push next instruction to SP """
-
         (call_reg) = args
 
         # First push current IP so that when function returns it knows to where
@@ -375,18 +381,21 @@ class VirtualMachineV2:
         self.cpu.push_reg(reg)
 
         # Set BP to SP
-        self.cpu.bp.uint16 = self.cpu.sp.uint16
+        self.cpu.bp = self.cpu.sp
 
         # Finally we set IP to the addr of the function to be called
 
-        self.cpu.ip.uint16 = call_reg.uint16
+        self.cpu.ip.uint16 = self.cpu.registers[call_reg.uint8]['value'].uint16
         
     def return_func(self):
 
-        self.cpu.sp.uint16 = self.cpu.bp.uint16 - 4
+        print(f"return_func (IP): {self.cpu.ip}")
+        
         self.cpu.pop_reg((uint8_t(0x2)))
-
         self.cpu.pop_reg((uint8_t(0x0)))
+        self.cpu.sp = self.cpu.bp
+
+        print(f"return_func (IP): {self.cpu.registers[0]['value']}")
 
     # Debug and helpers methods
 

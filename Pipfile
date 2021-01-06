@@ -8,7 +8,6 @@ pytest = "*"
 cors-vm = {editable = true, path = "."}
 
 [dev-packages]
-cors-vm = {editable = true, path = "."}
 
 [requires]
 python_version = "3.9"
