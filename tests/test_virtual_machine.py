@@ -122,7 +122,5 @@ def test_virtual_machine_can_run_subroutine_from_main_program(call_program, subr
     
     vm.run_program()
         
-    assert "CORS_CTF" in vm.output
-    print(vm.cpu.ip)
-    print(vm.ram.read_byte(vm.cpu.ip - 2))
+    assert "CORS_CTF" in vm.stdout
     assert 0x41 == vm.cpu.reg01.uint16

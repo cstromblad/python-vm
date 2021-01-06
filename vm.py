@@ -14,3 +14,5 @@ program = (uint16_t(0x0000), call_program)
 vm.load_program(program)
 
 vm.run_program()
+
+print(vm.stdout)

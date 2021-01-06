@@ -30,7 +30,7 @@ class RandomAccessMemory:
 
         val = self.memory[addr.uint16]
 
-        return uint8_t(val)
+        return uint8_t(val) 
 
     def read_word(self, addr: uint16_t):
 
@@ -128,7 +128,6 @@ class CentralProcessingUnit:
         # the address pointed to by cpu.sp
              
         value = self.registers[reg.uint8]['value'].uint16
-        print(f"push_reg: {reg} {value}")
 
         # Write it to the stack
         self.ram.write_word((uint16_t(value), self.sp - 2))
@@ -141,9 +140,7 @@ class CentralProcessingUnit:
 
         (reg) = args
 
-        print(self.sp)
         word = self.ram.read_word(self.sp)
-        print(word)
         self.registers[reg.uint8]['value'].uint16 = word.uint16
 
         self.sp += 2
@@ -164,6 +161,7 @@ class VirtualMachineV2:
 
         # Start of code_segment and length
         self.output = ""
+        self.stdout = ""
 
         self._code_segments: List = list()
         self._data_segments: List = list()
@@ -177,20 +175,20 @@ class VirtualMachineV2:
             3: {"name": "out",
                 "func": self.out,
                 "size": 2},
-            4: {"name": "write_word",
+            4: {"name": "m_word",
                 "func": self.ram.write_word,
                 "size": 4},
-            5: {"name": "write_byte",
+            5: {"name": "m_byte",
                 "func": self.ram.write_byte,
                 "size": 3,
                 "reversed": False},
-            6: {"name": "push_from_reg",
+            6: {"name": "push",
                 "func": self.cpu.push_reg,
                 "size": 1},
-            7: {"name": "pop_to_reg",
+            7: {"name": "pop",
                 "func": self.cpu.pop_reg,
                 "size": 1},
-            8: {"name": "move to register",
+            8: {"name": "mov",
                 "func": self.cpu.move_to_reg,
                 "size": 3,
                 "reversed": True},
@@ -198,11 +196,11 @@ class VirtualMachineV2:
                 "func": self.call_func,
                 "size": 1,
                 "reversed": False},
-            0xa:    {"name": "return",
+            0xa:    {"name": "ret",
                      "func": self.return_func,
                      "size": 0,
                      "reversed": False}, 
-            90: {"name": "no operation",
+            90: {"name": "noop",
                 "func": self.cpu.no_operation,
                 "size": 0},
             }
@@ -290,18 +288,19 @@ class VirtualMachineV2:
             # Zero arguments
 
             return ()
+
         elif isize == 1:
 
             byte = self.ram.read_byte(self.cpu.ip)
 
-            return (byte)
+            return tuple([byte])
         
         elif isize == 2:
             # One argument (1 word)
 
             word = self.ram.read_word(self.cpu.ip)
 
-            return (word)
+            return tuple([word])
 
         elif isize == 3:
             # Two arguments (1 byte and 1 word)
@@ -315,7 +314,6 @@ class VirtualMachineV2:
                 byte = self.ram.read_byte(self.cpu.ip)
                 word = self.ram.read_word(self.cpu.ip + 1)
 
-
             return (word, byte)
 
         elif isize == 4:
@@ -328,6 +326,12 @@ class VirtualMachineV2:
 
     def run_program(self):
 
+        # IP | Instruction | Arguments
+        # ----------------------------
+        
+        self.output += f"{'IP' : <8}|{' Instruction' : <15} | {'Arguments' : >15}\n"
+        self.output += f"-------------------------------------------------\n"
+
         while not self.should_halt():
 
             opcode = self.fetch_instruction().uint8
@@ -338,11 +342,24 @@ class VirtualMachineV2:
             if self.opcodes[opcode]['size'] == 0:
 
                 self.opcodes[opcode]['func']()
-                print(f"ip:{hex(self.cpu.ip.uint16)} {self.opcodes[opcode]['name']}()")
+
+                # Ex 0x3: MOV 0x3177, 0x3
+
+                ip_print = f"{hex(self.cpu.ip.uint16) : <10}"
+                op_name = self.opcodes[opcode]['name']
+
+                self.output += f"{ip_print : <8} {op_name : <15}\n"
 
             else:
                 self.cpu.ip.uint16 += self.opcodes[opcode]['size']
-                print(f"ip:{hex(self.cpu.ip.uint16)} {self.opcodes[opcode]['name']}({args})")
+
+                ip_print = f"{hex(self.cpu.ip.uint16) : <10}"
+                op_name = self.opcodes[opcode]['name']
+                args_print = ""
+                for arg in args:
+                    args_print += f"{arg} "
+
+                self.output += f"{ip_print : <8} {op_name : <15}{args_print : <15}\n"
                 self.opcodes[opcode]['func'](args)
 
     def should_halt(self):
@@ -355,15 +372,17 @@ class VirtualMachineV2:
         self._should_halt = True
 
     def out(self, args):
-        (addr) = args
+        (addr, ) = args
 
         i = 0
         while True:
+
             byte = self.ram.read_byte(addr + i).uint8
+
             if byte == 0:
                 break
 
-            self.output += chr(byte)
+            self.stdout += chr(byte)
 
             i += 1
 
@@ -371,6 +390,7 @@ class VirtualMachineV2:
 
         (call_reg) = args
 
+        call_reg = call_reg[0]
         # First push current IP so that when function returns it knows to where
         reg = (uint8_t(0x0))
         self.cpu.push_reg(reg)
@@ -385,17 +405,14 @@ class VirtualMachineV2:
 
         # Finally we set IP to the addr of the function to be called
 
-        self.cpu.ip.uint16 = self.cpu.registers[call_reg.uint8]['value'].uint16
+        self.cpu.ip.uint16 = self.cpu.registers[call_reg.val]['value'].uint16
         
     def return_func(self):
 
-        print(f"return_func (IP): {self.cpu.ip}")
-        
+        self.cpu.sp = self.cpu.bp
         self.cpu.pop_reg((uint8_t(0x2)))
         self.cpu.pop_reg((uint8_t(0x0)))
-        self.cpu.sp = self.cpu.bp
-
-        print(f"return_func (IP): {self.cpu.registers[0]['value']}")
+        
 
     # Debug and helpers methods
 

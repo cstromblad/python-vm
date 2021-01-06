@@ -7,10 +7,18 @@ class uint8_t:
 
         return f"uint8_t({hex(self.uint8)})"
 
+    def __str__(self):
+
+        return f"{hex(self.uint8)}"
+
     @property
     def uint8(self):
-        return self._uint8 
+        return self._uint8 & 0xff
 
+    @property
+    def val(self):
+        return self.uint8 & 0xff
+    
 class uint16_t:
 
     def __init__(self, value):
@@ -20,6 +28,11 @@ class uint16_t:
     def __repr__(self):
 
         return f"uint16_t({hex(self.uint16)})"
+
+    def __str__(self):
+
+        return f"{hex(self.uint16)}"
+
 
     def __add__(self, other):
         val = self.uint16 + other
@@ -54,5 +67,9 @@ class uint16_t:
         self._lo_byte = value & 0xff
         self._ho_byte = (value & 0xff00) >> 8
 
+    @property
+    def val(self):
+        return self.uint16
+    
     def as_tuple(self):
         return (self._ho_byte, self._lo_byte)
