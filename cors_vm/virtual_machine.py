@@ -374,7 +374,6 @@ class VirtualMachineV2:
                 op_name = self.opcodes[opcode]['name']
 
                 self.output += f"{ip_print : <8} {op_name : <15}\n"
-                print(f"{ip_print : <8} {op_name : <15}")
 
                 self.cpu.ip.uint16 += self.opcodes[opcode]['size'] + 1
                 self.opcodes[opcode]['func']()
@@ -389,7 +388,6 @@ class VirtualMachineV2:
                     args_print += f"{arg} "
 
                 self.output += f"{ip_print : <8} {op_name : <15}{args_print : <15}\n"
-                print(f"{ip_print : <8} {op_name : <15}{args_print : <15}")
                 self.cpu.ip.uint16 += self.opcodes[opcode]['size'] + 1
                 self.opcodes[opcode]['func'](args)
 
@@ -458,14 +456,11 @@ class VirtualMachineV2:
             i = 0
             while True:
                 byte = self.ram.read_byte(uint16_t(0x2000 + i)).uint8
-                print(hex(byte) + " ", end='')
                 self.ram.write_byte((uint8_t(byte), uint16_t(self.cpu.sp.uint16 - 256 + i)))
                 i += 1
 
                 if i == 260:  # Buffer is 256, BP + IP 4, hence 260
                     break
-
-            print('')
 
         except Exception as err:
             print(err)
