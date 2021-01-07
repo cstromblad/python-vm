@@ -360,6 +360,7 @@ class VirtualMachineV2:
         self.output += f"{'IP' : <8}|{' Instruction' : <15} | {'Arguments' : >15}\n"
         self.output += f"-------------------------------------------------\n"
 
+        self.started_at = time.time()
         while not self.should_halt():
 
             opcode = self.fetch_instruction()
@@ -390,6 +391,10 @@ class VirtualMachineV2:
                 self.output += f"{ip_print : <8} {op_name : <15}{args_print : <15}\n"
                 self.cpu.ip.uint16 += self.opcodes[opcode]['size'] + 1
                 self.opcodes[opcode]['func'](args)
+
+            if self.started_at + MAX_RUN_TIME < time.time():
+
+                self._should_halt = True
 
             # Increment IP (+1 for instruction opcode, before decode)
 
