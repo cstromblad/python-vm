@@ -28,7 +28,7 @@ def test_push_register_to_stack():
     register = (uint8_t(0x3))
     vm.cpu.push_reg(register)
 
-    assert vm.cpu.sp.uint16 == 0x7ffe
+    assert vm.cpu.sp.uint16 == 0x7ffd
 
     assert 0x41 == vm.ram.read_word(vm.cpu.sp).uint16
 

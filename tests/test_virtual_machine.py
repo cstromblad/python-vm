@@ -18,6 +18,11 @@ def subroutine():
 
     return b'\x03\x13\x37\x0A'
 
+@pytest.fixture
+def program_with_input():
+
+    return b'\x0B\xFF\x00'
+
 def test_cpu_halt_instruction_halts_program():
 
     vm = cvm.VirtualMachineV2()
@@ -124,3 +129,31 @@ def test_virtual_machine_can_run_subroutine_from_main_program(call_program, subr
         
     assert "CORS_CTF" in vm.stdout
     assert 0x41 == vm.cpu.reg01.uint16
+
+def test_virtual_machine_accepts_fake_input(program_with_input):
+
+    vm = cvm.VirtualMachineV2()
+
+    vm.load_program((uint16_t(0x0000), program_with_input), "main_program")
+
+    CORS_FLAG = b"CORS_CTF\x00"
+    vm.load_data((uint16_t(0x2000), CORS_FLAG, "cors_data"))
+    vm.run_program()
+
+    # If the function works properly it should copy
+    assert vm.ram.memory[0x7efc] == 0x43
+    assert vm.ram.memory[0x7efe] == 0x4f
+
+def test_virtual_machine_crashes_with_vulnerable_input(program_with_input):
+
+    vm = cvm.VirtualMachineV2()
+
+    vm.load_program((uint16_t(0x0000), program_with_input), "main_program")
+    CORS_FLAG = f"{'A' * 256}".encode()
+    CORS_FLAG = CORS_FLAG + b"CORS_CTF\x00"
+    vm.load_data((uint16_t(0x2000), CORS_FLAG, "cors_data"))
+    vm.run_program()
+
+    # If the function works properly it should copy
+    assert vm.ram.memory[0x7efe] == 0x43
+    assert vm.ram.memory[0x7eff] == 0x4f
