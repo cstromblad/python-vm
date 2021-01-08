@@ -19,6 +19,10 @@ class RandomAccessMemory:
 
     def __repr__(self):
         return f"RAM({self._memory_size})"
+
+    def __len__(self):
+        return len(self._memory)
+
     def reset(self):
         self._memory = bytearray(self._memory_size)
 
@@ -34,7 +38,13 @@ class RandomAccessMemory:
 
     def read_word(self, addr: uint16_t):
 
-        val = ((self.memory[addr.uint16]) << 8) + (self.memory[addr.uint16 + 1])
+        src_addr = addr.uint16 & self._memory_size  # Truncate to max_memory
+
+        if src_addr + 1 > self._memory_size:
+            raise ValueError('Segmentation fault, reading outside MAX memory_size.')
+
+        val = ((self.memory[src_addr]) << 8) + (self.memory[src_addr + 1])
+
         return uint16_t(val)
 
     def write_word(self, args):
